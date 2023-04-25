@@ -3,7 +3,7 @@ from dates import *
 
 # Импорт библиотек
 import requests
-import win32com.client
+import openpyxl
 import os.path
 
 # Функция формирования общего списка данных
@@ -46,6 +46,19 @@ def importdates(results, skip):
         massresult.append(result['features'][element]['properties'])
     # Возвращаем результат
     return massresult
+
+# Функция создания excel фаила
+def createexcelfile():
+    # Если фаил уже есть, то необходимо его удалить
+    if os.path.exists('export.xlsx'):
+        os.remove('export.xlsx')
+    # Создаём рабочую кинигу
+    workbook = openpyxl.Workbook()
+    # Создаём рабочий лист с названием текста запроса
+    worksheet = workbook.create_sheet(requeststext, 0)
+    # Сохраняем фаил как 'export.xlsx'
+    workbook.save('export.xlsx')
+    return os.path.abspath('export.xlsx')
 
 # Функция вычисления последней строки в в excel файле
 def laststr(namefile):

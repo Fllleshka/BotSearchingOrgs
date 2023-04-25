@@ -9,4 +9,8 @@ import pprint
 #print(laststr)
 
 res = colletdates()
-print(len(res))
+print(f"Количество импортированных записей: {len(res)}")
+
+pathfile = createexcelfile()
+print(f"Путь к фаилу: {pathfile}")
+

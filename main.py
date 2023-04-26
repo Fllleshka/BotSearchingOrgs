@@ -2,15 +2,9 @@
 from dates import *
 from functions import *
 
-# Импорт библиотек
-import pprint
-
-#laststr = laststr("export.xlsx")
-#print(laststr)
-
+# Формирование массива данных
 res = colletdates()
-print(f"Количество импортированных записей: {len(res)}")
-
+# Создание файла
 pathfile = createexcelfile()
-print(f"Путь к фаилу: {pathfile}")
-
+# Запись данных в файл
+insertdates(pathfile, res)

@@ -4,7 +4,9 @@ from dates import *
 # Импорт библиотек
 import requests
 import openpyxl
+from openpyxl.styles import Alignment
 import os.path
+import pprint
 
 # Функция формирования общего списка данных
 def colletdates():
@@ -58,93 +60,56 @@ def createexcelfile():
     worksheet = workbook.create_sheet(requeststext, 0)
     # Сохраняем фаил как 'export.xlsx'
     workbook.save('export.xlsx')
-    return os.path.abspath('export.xlsx')
+    # Сохраняем абсолютный путь к файлу и возвращаем его
+    pathres = os.path.abspath('export.xlsx')
 
-# Функция вычисления последней строки в в excel файле
-def laststr(namefile):
-    # Экземпляр COM обьекта
-    xlApp = win32com.client.Dispatch("Excel.Application")
-    path = os.getcwd() + '/' + str(namefile)
-    print(path)
-    # Создаём файл
-    xlwb = xlApp.Workbooks.Add()
-    xlwb.SaveAs(path)
-    #xlwb = xlApp.Workbooks.SaveAs(path)
-    xlwb = xlApp.Workbooks.Open(path)
-    # Выбираем лист(таблицу)
-    sheet = xlwb.ActiveSheet
-    # Даём инфорацию о таблице
-    sheet.Cells(1, 1).value = "Текст запроса"
-    sheet.Cells(1, 2).value = requeststext
-    # Называем столбцы
-    sheet.Cells(2, 1).value = "ID ораганизации"
-    sheet.Cells(2, 2).value = "Называние"
-    sheet.Cells(2, 3).value = "Сайт"
-    sheet.Cells(2, 4).value = "Адрес"
-    sheet.Cells(2, 5).value = "Телефон1"
-    sheet.Cells(2, 6).value = "Телефон2"
+    return pathres
 
-    sheet.column_dimensions['A'].width = 110
-    sheet.column_dimensions['B'].width = 380
+def insertdates(pathfile, dates):
+    # Открываем фаил для редактирования
+    workbook = openpyxl.load_workbook(pathfile)
+    # Открываем лист для редактирования
+    worksheet = workbook.worksheets[0]
 
-    # Выбираем данные из range
-    alldates = sheet.Range("A1:A10000").Value
-    laststr = 1
-    for elem in alldates:
-        if elem[0] != None:
-            laststr += 1
-        else:
-            continue
-    #сохраняем рабочую книгу
-    xlwb.Save()
+    # Данные для вставки в столбцы
+    massnames = ['Id организации', 'Название организации', 'Сайт', 'Адрес', 'Телефон 1', 'Телефон 2']
+    masscolumns = ['A', 'B', 'C', 'D', 'E', 'F']
+    masswidth = [16, 54, 61, 103, 17, 17]
 
-    #закрываем ее
-    xlwb.Close()
+    # Вставка названий столбцов
+    for element in range(0, len(massnames)):
+        cellname = masscolumns[element] + str(1)
+        worksheet[cellname] = massnames[element]
+        worksheet.column_dimensions[masscolumns[element]].width = masswidth[element]
+        worksheet[cellname].alignment = Alignment(horizontal='center', vertical='center')
+    # Настойка высоты первой стоки
+    worksheet.row_dimensions[1].height = 35
+    # Фиксируем все, что левее и выше ячейки "G2"
+    worksheet.freeze_panes = "G2"
 
-    #закрываем COM объект
-    xlApp.Quit()
-    
-    return laststr
-
-def insertdates():
+    print(f"Количество импортированных записей: {len(dates)}")
     resultrequest = []
-    for element in range(0, len(resultrequest["features"])):
-        dates = resultrequest["features"][element]["properties"]["CompanyMetaData"]
-        #pprint.pprint(dates)
-        id = dates["id"]
-        name = dates["name"]
+    for element in dates:
+        data = element["CompanyMetaData"]
+        id = data["id"]
+        name = data["name"]
         try:
-            urlorg = dates['url']
+            urlorg = data['url']
         except:
             urlorg = "нету"
-        address = dates["address"]
-        try:
-            phones = dates["Phones"]
-            phonesall = []
-            try:
-                for elem in phones:
-                    phonesall.append(elem["formatted"])
-            except:
-                phonesall = "нету"
-        except:
-            phones = "нету"
-            phonesall = ["нету"]
 
-        if phonesall[0] == "нету":
-            print(f"Не записываем | {id} | {name} | {urlorg} | {address} | {phonesall}")
-        else:
-            sheet = []
-            print(f"{id} | {name} | {urlorg} | {address} | {phonesall}")
-            sheet.Cells(laststr, 1).value = id
-            sheet.Cells(laststr, 2).value = name
-            sheet.Cells(laststr, 3).value = urlorg
-            sheet.Cells(laststr, 4).value = address
+        address = data["address"]
+        try:
+            phone1 = data["Phones"][0]['formatted']
             try:
-                sheet.Cells(laststr, 5).value = phonesall[0]
+                phone2 = data["Phones"][1]['formatted']
             except:
-                sheet.Cells(laststr, 5).value = "отсуствует"
-            try:
-                sheet.Cells(laststr, 6).value = phonesall[1]
-            except:
-                sheet.Cells(laststr, 6).value = "отсуствует"
-            laststr += 1
+                phone2 = "Отсутствует"      
+        except:
+            phone1 = "Отсутствует"
+            phone2 = "Отсутствует"
+
+        worksheet.append({1:id, 2:name, 3:urlorg, 4:address, 5:phone1, 6:phone2})
+
+    # Сохраняем фаил как 'export.xlsx'
+    workbook.save(pathfile)
